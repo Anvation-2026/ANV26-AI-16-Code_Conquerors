@@ -346,16 +346,12 @@ For complete request and response schemas, start the backend and visit `/docs`.
 **Event:** Anvation 2026  
 **Organization:** Anvation 2026 GitHub Organization
 
-**Team ID:** Add your assigned team ID.
+**Team ID:** ANV26-AI-16.
 
-**Team members:** Add the names of your team members.
+**Team members:** JEEVAL.S , CHAYANA.L, ANANYA.S, ASHWIJA.K.N.
 
 We acknowledge the open-source libraries, datasets, and routing services used in the development of this research prototype. Please add the actual dataset citation, routing provider, and relevant licenses here before final submission.
 
-## 📄 License
 
-Add the license required by your team or event submission rules. Do not claim a particular open-source license unless you have chosen and included it in the repository.
-
----
 
 **SafeRouteAI — Making route planning more safety-aware through machine learning and explainable AI.**
