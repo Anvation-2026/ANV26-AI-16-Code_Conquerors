@@ -1,55 +1,361 @@
-# SafeRouteAI
+# SafeRouteAI 🛣️🤖
+### AI-Powered Safety-Aware Route Planning
 
-AI-powered route risk analysis for San Diego, CA, based on historical US-Accidents data.
-Research/demo only — see disclaimer below.
+**Anvation 2026 | AI / Machine Learning Project**
 
-## Run
+SafeRouteAI is an AI-powered route analysis prototype that helps users compare alternative journeys using estimated historical accident risk and travel time. By combining machine learning, geospatial analysis, and explainable AI, the system aims to make route planning more safety-aware and transparent.
 
-```bash
-# 1. Backend (Python 3.10+)
-cd backend
-python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+> **Disclaimer:** SafeRouteAI provides research and demonstration estimates based on historical accident patterns. It does not guarantee road safety, predict with certainty whether an accident will occur, or replace safe driving practices.
 
-# 2. Train ONCE (downloads yuvidhepe/us-accidents-updated, filters San Diego, trains XGBoost,
-#    saves artifacts/ + data/processed/). Prints schema, class distribution, missing values, metrics.
-python -m models.risk_model
+---
 
-# 3. Serve
-uvicorn main:app --reload --port 8000
+## 📌 Table of Contents
 
-# 4. Frontend (new terminal)
-cd frontend && npm install && npm run dev      # http://localhost:5173
+- [Problem Statement](#-problem-statement)
+- [Our Solution](#-our-solution)
+- [Key Features](#-key-features)
+- [System Architecture](#-system-architecture)
+- [Technology Stack](#-technology-stack)
+- [Machine Learning Approach](#-machine-learning-approach)
+- [Model Evaluation](#-model-evaluation)
+- [Project Structure](#-project-structure)
+- [Installation and Setup](#-installation-and-setup)
+- [API Endpoints](#-api-endpoints)
+- [Limitations](#-limitations)
+- [Future Enhancements](#-future-enhancements)
+- [Team and Acknowledgements](#-team-and-acknowledgements)
+
+---
+
+## 🎯 Problem Statement
+
+Conventional navigation systems primarily focus on distance and estimated travel time. However, road segments may have different historical accident patterns and contextual characteristics.
+
+Travelers may benefit from additional information when comparing alternative routes, but accident-related information is not always presented in an understandable, route-oriented format.
+
+**Our objective:** Develop a prototype that incorporates historical accident-related information into route analysis and explains the machine learning estimates used to compare routes.
+
+## 💡 Our Solution
+
+SafeRouteAI combines routing services, geospatial feature engineering, an XGBoost classification model, and SHAP-based explainability.
+
+The application analyzes available route alternatives, estimates historical accident-related risk, and presents risk and time comparisons through an interactive dashboard.
+
+The system is designed to support informed decisions rather than guarantee that any route is safe.
+
+## ✨ Key Features
+
+- **Route planning:** Enter a starting location and destination to retrieve route alternatives.
+- **Safety-aware comparison:** Compare routes using model-derived risk scores and estimated travel time.
+- **Segment-level analysis:** Inspect road-segment information and associated historical accident features.
+- **Machine learning:** Use an XGBoost model to estimate accident severity classes.
+- **Explainable AI:** Use SHAP to investigate feature contributions to model predictions.
+- **Interactive dashboard:** Present route analysis and comparisons through a React interface.
+- **REST API:** Connect the frontend to backend routing, prediction, and explanation services.
+- **Contextual inputs:** Incorporate available time-related and historical context into route analysis.
+
+*Feature availability depends on the backend services and model artifacts being configured correctly.*
+
+## 🏗️ System Architecture
+
+```text
+                  USER
+                   |
+                   v
+        React + Vite Frontend
+                   |
+                   v
+           FastAPI REST API
+                   |
+          +--------+--------+
+          |                 |
+          v                 v
+    Routing Service   Geospatial Service
+          |                 |
+          v                 v
+     Route Options    Segment Features
+                            |
+                            v
+                    XGBoost ML Model
+                            |
+                            v
+                     Risk Estimation
+                            |
+                 +----------+----------+
+                 |                     |
+                 v                     v
+          Route Comparison       SHAP Explanation
+                 |                     |
+                 +----------+----------+
+                            |
+                            v
+                  Dashboard Results
 ```
 
-Check `backend/data/processed/data_report.json` (schema, San Diego row count, Severity distribution,
-missing values) and `backend/artifacts/model/meta.json` (accuracy, precision, recall, F1, confusion matrix).
+### Workflow
 
-## How the numbers are produced (no hard-coded values)
-- **Target**: `Severity` (1-4), multi-class XGBoost. Features: weather, road flags (junction, crossing, signal…),
-  time features (hour, weekday, month, weekend, time-of-day), lat/lng. Excluded: ID, Description, End_Time,
-  Distance(mi) (post-accident), Source. Split: 80/20 stratified, `random_state=42`; classes with <20 rows dropped.
-- **Risk score (0-100)** = `100 * Σ_k P(severity=k) * (k-1)/3`. Levels: 0-25 Low, 26-50 Moderate, 51-75 High, 76-100 Critical.
-- **Routing**: OSRM returns geometry + estimated time only. Routes are cut into ≤400 m segments (by OSRM step/road name).
-- **Segment features**: road-feature shares come from historical accidents within 100 m (expanding to 300/600 m)
-  of the segment (GeoPandas spatial index, UTM 11N). Segments with no match are flagged `has_history=false`.
-  Weather uses typical (median/mode) San Diego historical values — **no live weather**. Time = current Pacific
-  time unless `hour/day_of_week/month` are sent to `/api/route-risk`.
-- **Route score** = length-weighted mean of segment scores.
-- **Comparison**: safest = lowest risk, fastest = lowest time, balanced = best normalised risk+time among the rest.
-  If OSRM returns fewer alternatives, the missing roles show "Not available" (nothing is fabricated).
-- **SHAP**: `shap.TreeExplainer` on the trained model; per-class values combined with the score's class weights
-  (severity-weighted log-odds; sign shows direction).
+1. The user enters a starting point and destination.
+2. The routing service retrieves alternative routes.
+3. The geospatial service constructs road-segment features using available historical accident data and contextual information.
+4. The XGBoost model estimates accident severity probabilities.
+5. Model outputs are aggregated into route-level risk scores.
+6. Routes are compared by estimated risk and journey time.
+7. The explanation service uses SHAP to identify influential model features.
 
-## Endpoints
-`GET /api/health` · `GET /api/model-info` · `POST /api/route` · `POST /api/predict` ·
-`POST /api/route-risk` · `GET /api/segment/{id}` · `POST /api/explain`
+## 🧰 Technology Stack
 
-## Limitations
-The model learns from *recorded accidents only* (no exposure/traffic-volume data), so scores reflect where and
-under what conditions recorded accidents were severe — not the probability of having an accident.
-Nominatim/OSRM public demo servers are rate-limited; self-host for heavy use.
+| Technology | Purpose |
+|---|---|
+| React | Interactive frontend |
+| Vite | Frontend development and build tooling |
+| Python | Backend and machine learning |
+| FastAPI | REST API |
+| XGBoost | Accident severity classification |
+| SHAP | Model explainability |
+| Pandas | Tabular data processing |
+| NumPy | Numerical computations |
+| Scikit-learn | Machine learning utilities and evaluation |
+| Geospatial and routing services | Location processing and route retrieval |
 
-> Risk predictions are generated from historical accident data and are intended for research and demonstration
-> purposes. Predictions indicate estimated historical accident risk and should not be interpreted as guaranteed
-> accident probability or a substitute for safe driving. Routing times are estimates and are not based on live traffic.
+## 🧠 Machine Learning Approach
+
+SafeRouteAI uses an XGBoost classification model to estimate accident severity classes from structured input features.
+
+### Risk estimation
+
+The model generates class probabilities. These outputs are combined using the model's configured severity weights to calculate a numerical risk score.
+
+A higher score indicates higher estimated risk according to the project's scoring method. It should not be interpreted as the probability of a crash occurring during a particular journey.
+
+### Explainable AI with SHAP
+
+SHAP (SHapley Additive exPlanations) helps explain how individual input features contribute to a model output.
+
+The application is designed to provide feature-level explanations for route or segment analysis. SHAP indicates model attribution, not causation.
+
+## 📊 Model Evaluation
+
+The current reported model evaluation metrics are:
+
+| Metric | Reported Result |
+|---|---:|
+| Accuracy | 0.870 (87.0%) |
+| Weighted F1-score | 0.870 |
+| Macro F1-score | 0.541 |
+
+### Interpretation
+
+- **Accuracy:** Proportion of correctly classified samples in the evaluation that produced the metric.
+- **Weighted F1-score:** F1-score averaged across classes while accounting for class frequency.
+- **Macro F1-score:** F1-score averaged equally across classes.
+
+The difference between weighted F1 and macro F1 indicates that performance may vary across severity classes. Further evaluation should include per-class precision and recall, a confusion matrix, and independent testing.
+
+These are reported evaluation results; they should not be interpreted as a guarantee of real-world prediction performance.
+
+## 📁 Project Structure
+
+```text
+SafeRouteAI/
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── MapView.jsx
+│   │   │   ├── RoutePlanner.jsx
+│   │   │   ├── RouteComparison.jsx
+│   │   │   ├── RouteRiskAnalysis.jsx
+│   │   │   ├── SegmentTable.jsx
+│   │   │   ├── SHAPPanel.jsx
+│   │   │   └── RiskLegend.jsx
+│   │   ├── services/
+│   │   │   └── api.js
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   └── styles.css
+│   ├── index.html
+│   ├── package.json
+│   └── vite.config.js
+├── backend/
+│   ├── main.py
+│   ├── requirements.txt
+│   ├── models/
+│   │   └── risk_model.py
+│   ├── services/
+│   │   ├── prediction_service.py
+│   │   ├── preprocessing.py
+│   │   ├── geospatial_service.py
+│   │   ├── routing_service.py
+│   │   ├── dataset_service.py
+│   │   └── shap_service.py
+│   ├── data/
+│   └── artifacts/
+│       ├── model/
+│       └── preprocessor/
+├── .gitignore
+└── README.md
+```
+
+## ⚙️ Installation and Setup
+
+### Prerequisites
+
+Install the following:
+
+- Python 3.12 (or a version supported by the installed dependencies)
+- Node.js and npm
+- Git
+- Access to any external routing service required by the configuration
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/anvation-2026/YOUR-REPOSITORY-NAME.git
+cd YOUR-REPOSITORY-NAME
+```
+
+Replace `YOUR-REPOSITORY-NAME` with your actual Anvation 2026 repository name.
+
+### 2. Start the backend
+
+Open a terminal in the project root and run:
+
+**Windows PowerShell**
+
+```powershell
+cd backend
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+If your model artifacts are not included in the repository, follow the project's model training or artifact-generation instructions before starting the API.
+
+If required by your setup, generate the model artifacts using:
+
+```powershell
+python -m models.risk_model
+```
+
+Then start the backend:
+
+```powershell
+python -m uvicorn main:app --host 127.0.0.1 --port 8000
+```
+
+Backend API:
+
+- Health check: http://127.0.0.1:8000/api/health
+- Model information: http://127.0.0.1:8000/api/model-info
+- Interactive API documentation: http://127.0.0.1:8000/docs
+
+Keep the backend terminal running.
+
+### 3. Start the frontend
+
+Open a second terminal:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Open the local URL printed by Vite, typically:
+
+http://localhost:5173
+
+If the frontend uses a different configured port, open the URL displayed in the terminal.
+
+### 4. Verify the application
+
+1. Confirm the backend health endpoint responds successfully.
+2. Confirm the model information endpoint returns the loaded model details.
+3. Open the frontend dashboard.
+4. Enter a starting location and destination.
+5. Run the route analysis and inspect the results.
+
+If the explanation endpoint fails, check the backend logs and confirm compatibility between the installed SHAP and XGBoost versions.
+
+## 🔌 API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/health` | Backend and model readiness |
+| GET | `/api/model-info` | Model metadata and evaluation information |
+| POST | `/api/route` | Retrieve route alternatives |
+| POST | `/api/predict` | Predict severity probabilities for supplied features |
+| POST | `/api/route-risk` | Analyze and compare route risk |
+| GET | `/api/segment/{segment_id}` | Retrieve segment information |
+| POST | `/api/explain` | Request SHAP-based model explanations |
+
+### Example request: Route analysis
+
+`POST /api/route-risk`
+
+```json
+{
+  "start": "San Diego International Airport",
+  "end": "Balboa Park"
+}
+```
+
+Optional contextual fields include `hour`, `day_of_week`, and `month`. Valid ranges are enforced by the API.
+
+### Example request: Model explanation
+
+`POST /api/explain`
+
+```json
+{
+  "analysis_id": "YOUR_ANALYSIS_ID",
+  "route_index": 0,
+  "segment_id": null
+}
+```
+
+Use the `analysis_id` returned by a successful route-risk analysis. The analysis is stored in backend memory, so restarting the backend requires generating the route analysis again.
+
+For complete request and response schemas, start the backend and visit `/docs`.
+
+## ⚠️ Limitations
+
+- Historical accident data may be incomplete, biased, or geographically limited.
+- Historical patterns may not represent current road conditions.
+- The current prototype does not use live traffic data.
+- Weather context uses typical historical San Diego values rather than live weather observations.
+- The model's performance may differ across severity classes and geographic regions.
+- SHAP explanations describe model behavior and do not establish causation.
+- External routing service availability may affect route analysis.
+- Risk estimates require further independent validation before any safety-critical deployment.
+
+## 🚀 Future Enhancements
+
+- Integrate live weather and traffic data from reliable providers.
+- Expand the historical accident dataset to additional cities.
+- Improve evaluation of underrepresented severity classes.
+- Add confusion matrices, per-class metrics, and probability calibration.
+- Validate model performance on independent locations and time periods.
+- Improve resilience to external API failures.
+- Develop a mobile-friendly interface.
+- Monitor model performance and data drift after deployment.
+
+## 👥 Team and Acknowledgements
+
+**Project:** SafeRouteAI  
+**Event:** Anvation 2026  
+**Organization:** Anvation 2026 GitHub Organization
+
+**Team ID:** Add your assigned team ID.
+
+**Team members:** Add the names of your team members.
+
+We acknowledge the open-source libraries, datasets, and routing services used in the development of this research prototype. Please add the actual dataset citation, routing provider, and relevant licenses here before final submission.
+
+## 📄 License
+
+Add the license required by your team or event submission rules. Do not claim a particular open-source license unless you have chosen and included it in the repository.
+
+---
+
+**SafeRouteAI — Making route planning more safety-aware through machine learning and explainable AI.**
