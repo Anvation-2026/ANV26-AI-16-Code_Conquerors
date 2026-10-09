@@ -1,0 +1,209 @@
+{
+  "classes": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "numeric": [
+    "temp",
+    "wind_chill",
+    "humidity",
+    "pressure",
+    "visibility",
+    "wind_speed",
+    "precip",
+    "lat",
+    "lng",
+    "hour",
+    "day_of_week",
+    "month",
+    "weekend"
+  ],
+  "bool": [
+    "amenity",
+    "bump",
+    "crossing",
+    "give_way",
+    "junction",
+    "no_exit",
+    "railway",
+    "roundabout",
+    "station",
+    "stop",
+    "traffic_calming",
+    "traffic_signal"
+  ],
+  "categorical": [
+    "weather",
+    "time_of_day",
+    "daylight"
+  ],
+  "features": [
+    "temp",
+    "wind_chill",
+    "humidity",
+    "pressure",
+    "visibility",
+    "wind_speed",
+    "precip",
+    "lat",
+    "lng",
+    "hour",
+    "day_of_week",
+    "month",
+    "weekend",
+    "amenity",
+    "bump",
+    "crossing",
+    "give_way",
+    "junction",
+    "no_exit",
+    "railway",
+    "roundabout",
+    "station",
+    "stop",
+    "traffic_calming",
+    "traffic_signal",
+    "weather",
+    "time_of_day",
+    "daylight"
+  ],
+  "defaults": {
+    "temp": 64.0,
+    "wind_chill": 63.0,
+    "humidity": 68.0,
+    "pressure": 29.87,
+    "visibility": 10.0,
+    "wind_speed": 6.9,
+    "precip": 0.0,
+    "lat": 32.846175,
+    "lng": -117.148737,
+    "hour": 14.0,
+    "day_of_week": 3.0,
+    "month": 6.0,
+    "weekend": 0.0,
+    "amenity": 0,
+    "bump": 0,
+    "crossing": 0,
+    "give_way": 0,
+    "junction": 0,
+    "no_exit": 0,
+    "railway": 0,
+    "roundabout": 0,
+    "station": 0,
+    "stop": 0,
+    "traffic_calming": 0,
+    "traffic_signal": 0,
+    "weather": "Clear",
+    "time_of_day": "Afternoon",
+    "daylight": "Day"
+  },
+  "metrics": {
+    "accuracy": 0.8704939279028464,
+    "precision_weighted": 0.8697138208312052,
+    "recall_weighted": 0.8704939279028464,
+    "f1_weighted": 0.8698960086578705,
+    "precision_macro": 0.5958369451645904,
+    "recall_macro": 0.5137621650091468,
+    "f1_macro": 0.5414680810505481,
+    "confusion_matrix": [
+      [
+        5,
+        31,
+        4,
+        0
+      ],
+      [
+        12,
+        15114,
+        1291,
+        30
+      ],
+      [
+        0,
+        1218,
+        2974,
+        16
+      ],
+      [
+        0,
+        68,
+        28,
+        42
+      ]
+    ],
+    "confusion_matrix_labels_severity": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "per_class": {
+      "Severity 1": {
+        "precision": 0.29411764705882354,
+        "recall": 0.125,
+        "f1-score": 0.17543859649122806,
+        "support": 40.0
+      },
+      "Severity 2": {
+        "precision": 0.919846631367537,
+        "recall": 0.9189517845199733,
+        "f1-score": 0.919398990206217,
+        "support": 16447.0
+      },
+      "Severity 3": {
+        "precision": 0.6921107749592739,
+        "recall": 0.7067490494296578,
+        "f1-score": 0.6993533215755438,
+        "support": 4208.0
+      },
+      "Severity 4": {
+        "precision": 0.4772727272727273,
+        "recall": 0.30434782608695654,
+        "f1-score": 0.37168141592920356,
+        "support": 138.0
+      },
+      "accuracy": 0.8704939279028464,
+      "macro avg": {
+        "precision": 0.5958369451645904,
+        "recall": 0.5137621650091468,
+        "f1-score": 0.5414680810505481,
+        "support": 20833.0
+      },
+      "weighted avg": {
+        "precision": 0.8697138208312052,
+        "recall": 0.8704939279028464,
+        "f1-score": 0.8698960086578705,
+        "support": 20833.0
+      }
+    },
+    "n_train": 74998,
+    "n_test": 20833,
+    "random_state": 42
+  },
+  "data_report": {
+    "dataset": "yuvidhepe/us-accidents-updated",
+    "san_diego_rows": 104165,
+    "severity_distribution": {
+      "1": 200,
+      "2": 82233,
+      "3": 21041,
+      "4": 691
+    },
+    "missing_values": {
+      "Street": 305,
+      "Temperature(F)": 2331,
+      "Wind_Chill(F)": 33870,
+      "Humidity(%)": 2624,
+      "Pressure(in)": 689,
+      "Visibility(mi)": 918,
+      "Wind_Speed(mph)": 7869,
+      "Precipitation(in)": 30438,
+      "Weather_Condition": 965,
+      "Sunrise_Sunset": 329
+    }
+  },
+  "risk_score_formula": "score = 100 * sum_k P(severity=k) * (k-1)/3  (probability-weighted severity, 0-100)",
+  "algorithm": "XGBoost multi:softprob"
+}
